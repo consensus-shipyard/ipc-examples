@@ -1,0 +1,6 @@
+[submodule "axelar-token/lib/axelar-gmp-sdk-solidity"]
+	path = axelar-token/lib/axelar-gmp-sdk-solidity
+	url = https://github.com/axelarnetwork/axelar-gmp-sdk-solidity
+[submodule "axelar-token/lib/openzeppelin-contracts"]
+	path = axelar-token/lib/openzeppelin-contracts
+	url = https://github.com/openzeppelin/openzeppelin-contracts
