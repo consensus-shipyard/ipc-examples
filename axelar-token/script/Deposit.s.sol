@@ -23,6 +23,7 @@ contract Deposit is Script {
         console.log("token sender address: %s", senderAddr);
 
         uint256 amount = vm.envUint("AMOUNT");
+        uint256 gasPayment = vm.envUint("GAS_PAYMENT");
         address beneficiary = vm.envAddress("BENEFICIARY");
         string memory symbol = vm.envString("SYMBOL");
         address[] memory route = new address[](1);
@@ -41,7 +42,7 @@ contract Deposit is Script {
             symbol: symbol,
             amount: amount
         });
-        sender.fundSubnet(params);
+        sender.fundSubnet{value: gasPayment}(params);
         vm.stopBroadcast();
     }
 }

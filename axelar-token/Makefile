@@ -38,8 +38,10 @@ deposit:
 	read -p "Symbol (as registered in Axelar): " SYMBOL; \
 	read -p "Destination subnet root: " SUBNET_ROOT; \
 	read -p "Destination subnet address: " SUBNET_ADDR; \
-	export $$BENEFICIARY; export $$AMOUNT; export $$SYMBOL; export $$SUBNET_ROOT; export $$SUBNET_ADDR; \
+	read -p "Gas payment (in origin's native coin): " GAS_PAYMENT; \
+	export BENEFICIARY=$$BENEFICIARY; export AMOUNT=$$AMOUNT; export SYMBOL=$$SYMBOL; export SUBNET_ROOT=$$SUBNET_ROOT; export SUBNET_ADDR=$$SUBNET_ADDR; export GAS_PAYMENT=$$GAS_PAYMENT; \
 	forge script ./script/Deposit.s.sol \
 		--rpc-url "${$(NETWORK)__RPC_URL}" \
 		--broadcast \
-		--skip-simulation
+		--skip-simulation \
+		-vvv
