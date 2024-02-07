@@ -30,6 +30,8 @@ contract IpcTokenSender {
         require(msg.value > 0, 'Gas payment is required');
 
         address tokenAddress = axelarGateway.tokenAddresses(params.symbol);
+        require(tokenAddress != address(0), "could not resolve token address");
+
         IERC20(tokenAddress).transferFrom(msg.sender, address(this), params.amount);
         IERC20(tokenAddress).approve(address(axelarGateway), params.amount);
         bytes memory payload = abi.encode(params);
