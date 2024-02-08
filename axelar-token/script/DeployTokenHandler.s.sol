@@ -10,7 +10,7 @@ contract DeployScript is Script {
     function setUp() public {}
 
     function run() public {
-        string memory network = vm.envString("NETWORK");
+        string memory network = vm.envString("DEST_NETWORK");
         uint256 privateKey = vm.envUint(string.concat(network, "__PRIVATE_KEY"));
 
         console.log("deploying token handler to %s...", network);
@@ -18,7 +18,7 @@ contract DeployScript is Script {
         // Deploy the handler on Filecoin Calibration.
         vm.startBroadcast(privateKey);
         IpcTokenHandler.ConstructorParams memory params = IpcTokenHandler.ConstructorParams({
-            axelarGateway: vm.envAddress(string.concat(network, "__AXELAR_GATEWAY_ADDRESS")),
+            axelarIts: vm.envAddress(string.concat(network, "__AXELAR_ITS_ADDRESS")),
             ipcGateway: vm.envAddress(string.concat(network, "__IPC_GATEWAY_ADDRESS"))
         });
         handler = new IpcTokenHandler(params);

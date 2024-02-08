@@ -13,7 +13,7 @@ struct SubnetID {
 struct FundSubnetParams {
     SubnetID subnet;
     address beneficiary;
-    string symbol;
+    bytes32 tokenId;
     uint256 amount;
 }
 

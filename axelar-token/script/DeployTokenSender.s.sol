@@ -11,8 +11,9 @@ contract DeployScript is Script {
     function setUp() public {}
 
     function run() public {
-        string memory network = vm.envString("NETWORK");
-        uint256 privateKey = vm.envUint(string.concat(network, "__PRIVATE_KEY"));
+        string memory originNetwork = vm.envString("ORIGIN_NETWORK");
+        string memory destNetwork = vm.envString("DEST_NETWORK");
+        uint256 privateKey = vm.envUint(string.concat(originNetwork, "__PRIVATE_KEY"));
 
         console.log("loading handler address...");
 
@@ -20,26 +21,25 @@ contract DeployScript is Script {
         require(vm.exists(path), "no addresses.json; please run DeployTokenHandler on the destination chain");
 
         string memory json = vm.readFile(path);
-        string memory handlerAddr = vm.parseJsonString(json, ".dest.token_handler");
+        address handlerAddr = vm.parseJsonAddress(json, ".dest.token_handler");
         console.log("handler address: %s", handlerAddr);
 
-        console.log("deploying token sender to %s...", network);
+        console.log("deploying token sender to %s...", originNetwork);
 
         // Deploy the sender on Mumbai.
         vm.startBroadcast(privateKey);
         IpcTokenSender.ConstructorParams memory params = IpcTokenSender.ConstructorParams({
-            axelarGateway: vm.envAddress(string.concat(network, "__AXELAR_GATEWAY_ADDRESS")),
-            axelarGasService: vm.envAddress(string.concat(network, "__AXELAR_GASSERVICE_ADDRESS")),
-            destinationChain: vm.envString(string.concat(network, "__AXELAR_CHAIN_NAME")),
+            axelarIts: vm.envAddress(string.concat(destNetwork, "__AXELAR_ITS_ADDRESS")),
+            destinationChain: vm.envString(string.concat(destNetwork, "__AXELAR_CHAIN_NAME")),
             tokenHandlerAddress: handlerAddr
         });
         sender = new IpcTokenSender(params);
         vm.stopBroadcast();
 
-        console.log("token sender deployed on %s: %s", network, address(sender));
+        console.log("token sender deployed on %s: %s", originNetwork, address(sender));
 
         string memory key = "out";
-        vm.serializeString(key, "network", network);
+        vm.serializeString(key, "network", originNetwork);
         json = vm.serializeAddress(key, "token_sender", address(sender));
         vm.writeJson(json, path, ".src");
 

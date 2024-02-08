@@ -1,27 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import { IAxelarGasService } from '@axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGasService.sol';
-import { IAxelarGateway } from '@axelar-gmp-sdk-solidity/contracts/interfaces/IAxelarGateway.sol';
-import { IERC20 } from '@axelar-gmp-sdk-solidity/contracts/interfaces/IERC20.sol';
+import { IInterchainTokenService } from "@axelar-network/interchain-token-service/interfaces/IInterchainTokenService.sol";
+import { IERC20Named } from '@axelar-network/interchain-token-service/interfaces/IERC20Named.sol';
 import { FundSubnetParams } from "./Types.sol";
 
 contract IpcTokenSender {
-    IAxelarGateway public immutable axelarGateway;
-    IAxelarGasService public immutable axelarGasService;
+    IInterchainTokenService public immutable axelarIts;
     string public destinationChain;
-    string public tokenHandlerAddress;
+    address public tokenHandlerAddress;
 
     struct ConstructorParams {
-        address axelarGateway;
-        address axelarGasService;
+        address axelarIts;
         string destinationChain;
-        string tokenHandlerAddress;
+        address tokenHandlerAddress;
     }
 
     constructor(ConstructorParams memory params) {
-        axelarGateway = IAxelarGateway(params.axelarGateway);
-        axelarGasService = IAxelarGasService(params.axelarGasService);
+        axelarIts = IInterchainTokenService(params.axelarIts);
         destinationChain = params.destinationChain;
         tokenHandlerAddress = params.tokenHandlerAddress;
     }
@@ -29,21 +25,24 @@ contract IpcTokenSender {
     function fundSubnet(FundSubnetParams calldata params) external payable {
         require(msg.value > 0, 'Gas payment is required');
 
-        address tokenAddress = axelarGateway.tokenAddresses(params.symbol);
+        address tokenAddress = axelarIts.validTokenAddress(params.tokenId);
         require(tokenAddress != address(0), "could not resolve token address");
 
-        IERC20(tokenAddress).transferFrom(msg.sender, address(this), params.amount);
-        IERC20(tokenAddress).approve(address(axelarGateway), params.amount);
+        IERC20Named token = IERC20Named(tokenAddress);
+
+        require(token.balanceOf(msg.sender) >= params.amount, "insufficient token balance");
+        require(token.allowance(msg.sender, address(this)) >= params.amount, "insufficient token allowance");
+
+        token.transferFrom(msg.sender, address(this), params.amount);
+        token.approve(address(axelarIts), params.amount);
         bytes memory payload = abi.encode(params);
-        axelarGasService.payNativeGasForContractCallWithToken{ value: msg.value }(
-            address(this),
+        axelarIts.callContractWithInterchainToken{ value: msg.value }(
+            params.tokenId,
             destinationChain,
-            tokenHandlerAddress,
-            payload,
-            params.symbol,
+            abi.encodePacked(tokenHandlerAddress),
             params.amount,
-            msg.sender
+            payload,
+            msg.value
         );
-        axelarGateway.callContractWithToken(destinationChain, tokenHandlerAddress, payload, params.symbol, params.amount);
     }
 }
