@@ -10,13 +10,6 @@ struct SubnetID {
     address[] route;
 }
 
-struct FundSubnetParams {
-    SubnetID subnet;
-    address beneficiary;
-    bytes32 tokenId;
-    uint256 amount;
-}
-
 struct FvmAddress {
     uint8 addrType;
     bytes payload;

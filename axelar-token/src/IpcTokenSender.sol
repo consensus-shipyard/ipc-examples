@@ -2,45 +2,40 @@
 pragma solidity ^0.8.19;
 
 import { IInterchainTokenService } from "@axelar-network/interchain-token-service/interfaces/IInterchainTokenService.sol";
-import { IERC20Named } from '@axelar-network/interchain-token-service/interfaces/IERC20Named.sol';
-import { FundSubnetParams } from "./Types.sol";
+import { AddressBytes } from "@axelar-network/axelar-gmp-sdk-solidity/contracts/libs/AddressBytes.sol";
+import { IERC20 } from "openzeppelin-contracts/interfaces/IERC20.sol";
+import { SubnetID } from "./Types.sol";
 
 contract IpcTokenSender {
     IInterchainTokenService public immutable axelarIts;
     string public destinationChain;
-    address public tokenHandlerAddress;
+    bytes public destinationTokenHandler;
 
-    struct ConstructorParams {
-        address axelarIts;
-        string destinationChain;
-        address tokenHandlerAddress;
+    constructor(address _axelarIts, string memory _destinationChain, address _destinationTokenHandler) {
+        axelarIts = IInterchainTokenService(_axelarIts);
+        destinationChain = _destinationChain;
+        destinationTokenHandler = AddressBytes.toBytes(_destinationTokenHandler);
     }
 
-    constructor(ConstructorParams memory params) {
-        axelarIts = IInterchainTokenService(params.axelarIts);
-        destinationChain = params.destinationChain;
-        tokenHandlerAddress = params.tokenHandlerAddress;
-    }
+    function fundSubnet(bytes32 tokenId, SubnetID calldata subnet, address recipient, uint256 amount) external payable {
+        require(msg.value > 0, "gas payment is required");
 
-    function fundSubnet(FundSubnetParams calldata params) external payable {
-        require(msg.value > 0, 'Gas payment is required');
-
-        address tokenAddress = axelarIts.validTokenAddress(params.tokenId);
+        address tokenAddress = axelarIts.validTokenAddress(tokenId);
         require(tokenAddress != address(0), "could not resolve token address");
 
-        IERC20Named token = IERC20Named(tokenAddress);
+        IERC20 token = IERC20(tokenAddress);
 
-        require(token.balanceOf(msg.sender) >= params.amount, "insufficient token balance");
-        require(token.allowance(msg.sender, address(this)) >= params.amount, "insufficient token allowance");
+        require(token.balanceOf(msg.sender) >= amount, "insufficient token balance");
+        require(token.allowance(msg.sender, address(this)) >= amount, "insufficient token allowance");
 
-        token.transferFrom(msg.sender, address(this), params.amount);
-        token.approve(address(axelarIts), params.amount);
-        bytes memory payload = abi.encode(params);
+        token.transferFrom(msg.sender, address(this), amount);
+        token.approve(address(axelarIts), amount);
+        bytes memory payload = abi.encode(subnet, recipient);
         axelarIts.callContractWithInterchainToken{ value: msg.value }(
-            params.tokenId,
+            tokenId,
             destinationChain,
-            abi.encodePacked(tokenHandlerAddress),
-            params.amount,
+            destinationTokenHandler,
+            amount,
             payload,
             msg.value
         );

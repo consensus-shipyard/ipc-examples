@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { Script, console2 as console } from "forge-std/Script.sol";
-import { IERC20Named } from '@axelar-network/interchain-token-service/interfaces/IERC20Named.sol';
+import { IERC20 } from "openzeppelin-contracts/interfaces/IERC20.sol";
 
 import "../src/IpcTokenSender.sol";
 import "../src/Types.sol";
@@ -30,19 +30,15 @@ contract Deposit is Script {
         route[0] = vm.envAddress("SUBNET_ADDR");
         SubnetID memory subnetId = SubnetID({root: uint64(vm.envUint("SUBNET_ROOT")), route: route});
 
+        IERC20 token = IERC20(vm.envAddress(string.concat(network, "__ORIGIN_TOKEN_ADDRESS")));
+
         vm.startBroadcast(privateKey);
-        IERC20Named token = IERC20Named(vm.envAddress(string.concat(network, "__ORIGIN_TOKEN_ADDRESS")));
+
         console.log("approving amount in origin token @ %s: %d", address(token), amount);
         token.approve(senderAddr, amount);
 
         IpcTokenSender sender = IpcTokenSender(senderAddr);
-        FundSubnetParams memory params = FundSubnetParams({
-            subnet: subnetId,
-            beneficiary: beneficiary,
-            tokenId: tokenId,
-            amount: amount
-        });
-        sender.fundSubnet{value: gasPayment}(params);
+        sender.fundSubnet{value: gasPayment}({tokenId: tokenId, subnet: subnetId, recipient: beneficiary, amount: amount});
         vm.stopBroadcast();
     }
 }

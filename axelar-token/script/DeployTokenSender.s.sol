@@ -2,8 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { Script, console2 as console } from "forge-std/Script.sol";
-
-import  "../src/IpcTokenSender.sol";
+import "../src/IpcTokenSender.sol";
 
 contract DeployScript is Script {
     IpcTokenSender public sender;
@@ -28,12 +27,11 @@ contract DeployScript is Script {
 
         // Deploy the sender on Mumbai.
         vm.startBroadcast(privateKey);
-        IpcTokenSender.ConstructorParams memory params = IpcTokenSender.ConstructorParams({
-            axelarIts: vm.envAddress(string.concat(destNetwork, "__AXELAR_ITS_ADDRESS")),
-            destinationChain: vm.envString(string.concat(destNetwork, "__AXELAR_CHAIN_NAME")),
-            tokenHandlerAddress: handlerAddr
+        sender = new IpcTokenSender({
+            _axelarIts: vm.envAddress(string.concat(destNetwork, "__AXELAR_ITS_ADDRESS")),
+            _destinationChain: vm.envString(string.concat(destNetwork, "__AXELAR_CHAIN_NAME")),
+            _destinationTokenHandler: handlerAddr
         });
-        sender = new IpcTokenSender(params);
         vm.stopBroadcast();
 
         console.log("token sender deployed on %s: %s", originNetwork, address(sender));
