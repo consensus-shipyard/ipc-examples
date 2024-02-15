@@ -36,8 +36,9 @@ deposit:
 	read -p "Destination subnet root [314159]: " SUBNET_ROOT; \
 	read -p "Destination subnet address: " SUBNET_ADDR; \
 	read -p "Gas payment (in origin's native coin) [350000000000000000]: " GAS_PAYMENT; \
-	export BENEFICIARY=$$BENEFICIARY; export AMOUNT=$$AMOUNT; export TOKEN_ID=$$TOKEN_ID; export SUBNET_ROOT=$$SUBNET_ROOT; export SUBNET_ADDR=$${SUBNET_ADDR:-314159}; export GAS_PAYMENT=$${GAS_PAYMENT:-350000000000000000}; \
 	forge script ./script/Deposit.s.sol \
 		--rpc-url "${$(ORIGIN_NETWORK)__RPC_URL}" \
 		--broadcast \
-		-vvv
+		--sig "run(bytes32,uint256,uint256,address,uint64,address)" \
+		-vvv \
+		$$TOKEN_ID $$AMOUNT $${GAS_PAYMENT:-350000000000000000} $$BENEFICIARY $${SUBNET_ROOT:-314159} $$SUBNET_ADDR

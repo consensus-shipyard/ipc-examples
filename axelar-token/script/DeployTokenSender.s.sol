@@ -28,7 +28,7 @@ contract DeployScript is Script {
         // Deploy the sender on Mumbai.
         vm.startBroadcast(privateKey);
         sender = new IpcTokenSender({
-            _axelarIts: vm.envAddress(string.concat(destNetwork, "__AXELAR_ITS_ADDRESS")),
+            _axelarIts: vm.envAddress(string.concat(originNetwork, "__AXELAR_ITS_ADDRESS")),
             _destinationChain: vm.envString(string.concat(destNetwork, "__AXELAR_CHAIN_NAME")),
             _destinationTokenHandler: handlerAddr
         });

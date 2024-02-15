@@ -26,7 +26,6 @@ contract IpcTokenHandler is InterchainTokenExecutable {
         IERC20 token = IERC20(tokenAddr);
         require(token.balanceOf(address(this)) >= amount, "insufficient balance");
 
-        token.transfer(address(ipcGateway), amount);
         token.approve(address(ipcGateway), amount);
 
         ipcGateway.fundWithToken(subnet, convertAddress(recipient), amount);

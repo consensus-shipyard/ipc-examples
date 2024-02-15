@@ -10,35 +10,38 @@ import "../src/Types.sol";
 contract Deposit is Script {
     function setUp() public {}
 
-    function run() public {
-        string memory network = vm.envString("ORIGIN_NETWORK");
-        uint256 privateKey = vm.envUint(string.concat(network, "__PRIVATE_KEY"));
+    function run(bytes32 tokenId, uint256 amount, uint256 gasPayment, address beneficiary, uint64 subnetRoot, address subnetAddr) public {
+        IERC20 token;
+        uint256 privateKey;
 
-        string memory path = string.concat(vm.projectRoot(), "/out/addresses.json");
-        require(vm.exists(path), "no addresses.json; run the deploy targets");
+        {
+            string memory network = vm.envString("ORIGIN_NETWORK");
+            token = IERC20(vm.envAddress(string.concat(network, "__ORIGIN_TOKEN_ADDRESS")));
+            privateKey = vm.envUint(string.concat(network, "__PRIVATE_KEY"));
+        }
 
-        string memory json = vm.readFile(path);
-        address senderAddr = vm.parseJsonAddress(json, ".src.token_sender");
+        address senderAddr;
+        {
+            string memory path = string.concat(vm.projectRoot(), "/out/addresses.json");
+            require(vm.exists(path), "no addresses.json; run the deploy targets");
+            string memory json = vm.readFile(path);
+            senderAddr = vm.parseJsonAddress(json, ".src.token_sender");
+        }
 
         console.log("token sender address: %s", senderAddr);
 
-        bytes32 tokenId = vm.envBytes32("TOKEN_ID");
-        uint256 amount = vm.envUint("AMOUNT");
-        uint256 gasPayment = vm.envUint("GAS_PAYMENT");
-        address beneficiary = vm.envAddress("BENEFICIARY");
-        address[] memory route = new address[](1);
-        route[0] = vm.envAddress("SUBNET_ADDR");
-        SubnetID memory subnetId = SubnetID({root: uint64(vm.envUint("SUBNET_ROOT")), route: route});
-
-        IERC20 token = IERC20(vm.envAddress(string.concat(network, "__ORIGIN_TOKEN_ADDRESS")));
-
-        vm.startBroadcast(privateKey);
+        SubnetID memory subnetId;
+        {
+            address[] memory route = new address[](1);
+            route[0] = subnetAddr;
+            subnetId = SubnetID({root: subnetRoot, route: route});
+        }
 
         console.log("approving amount in origin token @ %s: %d", address(token), amount);
+        vm.startBroadcast(privateKey);
         token.approve(senderAddr, amount);
+        IpcTokenSender(senderAddr).fundSubnet{value: gasPayment}({tokenId: tokenId, subnet: subnetId, recipient: beneficiary, amount: amount});
 
-        IpcTokenSender sender = IpcTokenSender(senderAddr);
-        sender.fundSubnet{value: gasPayment}({tokenId: tokenId, subnet: subnetId, recipient: beneficiary, amount: amount});
         vm.stopBroadcast();
     }
 }
